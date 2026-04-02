@@ -5,7 +5,52 @@
 **a. Initial design**
 
 - Briefly describe your initial UML design.
+we should be able to upload the pet's details, assign tasks associated with the pet, and then create a daily plan to do it.
 - What classes did you include, and what responsibilities did you assign to each?
+    the classess we needed are pets, tasks, and frequency.
+1. Pet
+Attributes:
+petId
+name
+species (dog, cat, etc.)
+age
+
+Methods:
+addTask(task)
+removeTask(task)
+getTasks()
+
+2. Task
+Attributes:
+taskId
+title (e.g., “Feed”, “Walk”)
+description
+frequency
+assignedPet
+
+Methods:
+markComplete()
+updateTask()
+
+3. Schedule
+Attributes:
+type (daily, weekly, custom)
+interval (e.g., every 2 days)
+startDate
+nextDueDate
+
+Methods:
+calculateNextDueDate()
+isDueToday()
+
+4. Owner 
+Attributes:
+userId
+name
+
+Methods:
+addPet()
+viewDailyPlan()
 
 **b. Design changes**
 
