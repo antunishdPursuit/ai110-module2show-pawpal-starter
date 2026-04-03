@@ -81,6 +81,24 @@ class Task:
         if self.schedule:
             self.schedule.calculate_next_due_date()
 
+    def next_occurrence(self) -> Optional["Task"]:
+        """Return a new Task instance for the next recurrence, or None if not recurring."""
+        if not self.schedule:
+            return None
+        next_start = date.today() + timedelta(days=self.schedule.interval)
+        new_schedule = Schedule(
+            schedule_type=self.schedule.schedule_type,
+            start_date=next_start,
+            interval=self.schedule.interval
+        )
+        return Task(
+            title=self.title,
+            description=self.description,
+            assigned_pet_id=self.assigned_pet_id,
+            schedule=new_schedule,
+            time_of_day=self.time_of_day
+        )
+
     def update_task(self, title: str = None, description: str = None, schedule: Schedule = None):
         """Update one or more task fields; raises ValueError if title is empty."""
         if title is not None:
@@ -196,6 +214,71 @@ class Owner:
                     d = task.to_display_dict()
                     print(f"  [{d['status'].upper()}] {d['time_of_day']}  {d['title']} — {d['description']}")
                     print(f"       Next due: {d['next_due']} | Last completed: {d['last_completed']}")
+
+
+class Scheduler:
+    """Utility class for sorting and filtering task lists across any pets."""
+
+    @staticmethod
+    def sort_by_time(tasks: list[Task]) -> list[Task]:
+        """Sort tasks by time_of_day using a lambda on HH:MM string; no-time tasks sort last."""
+        return sorted(
+            tasks,
+            key=lambda t: (
+                t.time_of_day.strftime("%H:%M") if t.time_of_day else "99:99"
+            )
+        )
+
+    @staticmethod
+    def complete_and_reschedule(task: Task, pet: "Pet") -> Optional[Task]:
+        """Mark a task complete and auto-create the next occurrence for daily/weekly tasks.
+
+        Returns the new Task if one was created, or None for one-off tasks.
+        """
+        task.mark_complete()
+        if task.schedule and task.schedule.schedule_type in (ScheduleType.DAILY, ScheduleType.WEEKLY):
+            new_task = task.next_occurrence()
+            pet.add_task(new_task)
+            print(f"  -> New occurrence of '{new_task.title}' created, due {new_task.schedule.next_due_date}")
+            return new_task
+        return None
+
+    @staticmethod
+    def detect_conflicts(tasks: list[Task], pets: list = None) -> list[str]:
+        """Check for tasks scheduled at the same time; return a list of warning strings."""
+        warnings = []
+        id_to_name = {p.pet_id: p.name for p in pets} if pets else {}
+
+        # group tasks by their time_of_day — skip tasks with no time set
+        time_buckets: dict[time, list[Task]] = {}
+        for task in tasks:
+            if task.time_of_day is None:
+                continue
+            time_buckets.setdefault(task.time_of_day, []).append(task)
+
+        for t, bucket in time_buckets.items():
+            if len(bucket) > 1:
+                labels = []
+                for task in bucket:
+                    pet_name = id_to_name.get(task.assigned_pet_id, f"pet_id={task.assigned_pet_id}")
+                    labels.append(f"'{task.title}' ({pet_name})")
+                time_str = t.strftime("%I:%M %p")
+                warnings.append(f"CONFLICT at {time_str}: {' vs '.join(labels)}")
+
+        return warnings
+
+    @staticmethod
+    def filter_tasks(tasks: list[Task], status: str = None, pet_name: str = None,
+                     pets: list = None) -> list[Task]:
+        """Filter tasks by completion status and/or pet name."""
+        result = tasks
+        if status:
+            result = [t for t in result if t.status == status]
+        if pet_name and pets:
+            # build a lookup of pet_id -> pet_name from the provided pets list
+            id_to_name = {p.pet_id: p.name.lower() for p in pets}
+            result = [t for t in result if id_to_name.get(t.assigned_pet_id) == pet_name.lower()]
+        return result
 
 
 # --- Quick terminal test ---
