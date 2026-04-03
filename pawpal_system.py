@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import date, time, timedelta
 from enum import Enum
 from typing import Optional
 
@@ -57,8 +57,19 @@ class Task:
     description: str
     assigned_pet_id: int
     schedule: Optional[Schedule] = None
+    time_of_day: Optional[time] = None          # e.g. time(7, 0) for 7:00am
     task_id: int = field(default_factory=_task_ids.next)
     last_completed_date: Optional[date] = None
+
+    @property
+    def status(self) -> str:
+        """Derive task status from completion and schedule: done, overdue, or pending."""
+        today = date.today()
+        if self.last_completed_date == today:
+            return "done"
+        if self.schedule and self.schedule.next_due_date < today:
+            return "overdue"
+        return "pending"
 
     def mark_complete(self):
         """Mark the task complete for today and advance its schedule."""
@@ -87,6 +98,8 @@ class Task:
             "task_id": self.task_id,
             "title": self.title,
             "description": self.description,
+            "time_of_day": self.time_of_day.strftime("%I:%M %p") if self.time_of_day else "no time set",
+            "status": self.status,
             "due_today": self.schedule.is_due_today() if self.schedule else "no schedule",
             "next_due": str(self.schedule.next_due_date) if self.schedule else "N/A",
             "last_completed": str(self.last_completed_date) if self.last_completed_date else "never",
@@ -120,9 +133,14 @@ class Pet:
         """Return a shallow copy of all tasks for this pet."""
         return list(self.tasks)     # shallow copy to prevent external mutation
 
+    def get_tasks_by_status(self, status: str) -> list[Task]:
+        """Return all tasks matching the given status: 'pending', 'done', or 'overdue'."""
+        return [t for t in self.tasks if t.status == status]
+
     def get_due_tasks_today(self) -> list[Task]:
-        """Return all tasks with a schedule that is due today or overdue."""
-        return [t for t in self.tasks if t.schedule and t.schedule.is_due_today()]
+        """Return tasks due today sorted by time_of_day; tasks with no time sort last."""
+        due = [t for t in self.tasks if t.schedule and t.schedule.is_due_today()]
+        return sorted(due, key=lambda t: (t.time_of_day is None, t.time_of_day))
 
 
 class Owner:
@@ -155,6 +173,13 @@ class Owner:
             raise ValueError(f"Pet {pet_id} not found")
         return pet
 
+    def get_tasks_for_pet(self, pet_id: int, status: str = None) -> list[Task]:
+        """Return tasks for a specific pet, optionally filtered by status."""
+        pet = self.get_pet(pet_id)
+        if status:
+            return pet.get_tasks_by_status(status)
+        return pet.get_tasks()
+
     def view_daily_plan(self):
         """Print a formatted daily schedule for all pets owned by this owner."""
         print(f"\n=== Daily Plan for {self.name} ===")
@@ -169,7 +194,7 @@ class Owner:
             else:
                 for task in due:
                     d = task.to_display_dict()
-                    print(f"  [{d['task_id']}] {d['title']} — {d['description']}")
+                    print(f"  [{d['status'].upper()}] {d['time_of_day']}  {d['title']} — {d['description']}")
                     print(f"       Next due: {d['next_due']} | Last completed: {d['last_completed']}")
 
 
