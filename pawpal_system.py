@@ -156,8 +156,14 @@ class Pet:
         return [t for t in self.tasks if t.status == status]
 
     def get_due_tasks_today(self) -> list[Task]:
-        """Return tasks due today sorted by time_of_day; tasks with no time sort last."""
-        due = [t for t in self.tasks if t.schedule and t.schedule.is_due_today()]
+        """Return tasks due today, excluding already-completed ones, sorted by time_of_day."""
+        today = date.today()
+        due = [
+            t for t in self.tasks
+            if t.schedule
+            and t.schedule.is_due_today()
+            and t.last_completed_date != today
+        ]
         return sorted(due, key=lambda t: (t.time_of_day is None, t.time_of_day))
 
 
@@ -221,13 +227,8 @@ class Scheduler:
 
     @staticmethod
     def sort_by_time(tasks: list[Task]) -> list[Task]:
-        """Sort tasks by time_of_day using a lambda on HH:MM string; no-time tasks sort last."""
-        return sorted(
-            tasks,
-            key=lambda t: (
-                t.time_of_day.strftime("%H:%M") if t.time_of_day else "99:99"
-            )
-        )
+        """Sort tasks by time_of_day; tasks with no time sort last."""
+        return sorted(tasks, key=lambda t: (t.time_of_day is None, t.time_of_day))
 
     @staticmethod
     def complete_and_reschedule(task: Task, pet: "Pet") -> Optional[Task]:
@@ -239,7 +240,6 @@ class Scheduler:
         if task.schedule and task.schedule.schedule_type in (ScheduleType.DAILY, ScheduleType.WEEKLY):
             new_task = task.next_occurrence()
             pet.add_task(new_task)
-            print(f"  -> New occurrence of '{new_task.title}' created, due {new_task.schedule.next_due_date}")
             return new_task
         return None
 
@@ -256,29 +256,26 @@ class Scheduler:
                 continue
             time_buckets.setdefault(task.time_of_day, []).append(task)
 
-        for t, bucket in time_buckets.items():
+        for slot, bucket in time_buckets.items():
             if len(bucket) > 1:
-                labels = []
-                for task in bucket:
-                    pet_name = id_to_name.get(task.assigned_pet_id, f"pet_id={task.assigned_pet_id}")
-                    labels.append(f"'{task.title}' ({pet_name})")
-                time_str = t.strftime("%I:%M %p")
-                warnings.append(f"CONFLICT at {time_str}: {' vs '.join(labels)}")
+                labels = [
+                    f"'{t.title}' ({id_to_name.get(t.assigned_pet_id, f'pet_id={t.assigned_pet_id}')})"
+                    for t in bucket
+                ]
+                warnings.append(f"CONFLICT at {slot.strftime('%I:%M %p')}: {' vs '.join(labels)}")
 
         return warnings
 
     @staticmethod
     def filter_tasks(tasks: list[Task], status: str = None, pet_name: str = None,
                      pets: list = None) -> list[Task]:
-        """Filter tasks by completion status and/or pet name."""
-        result = tasks
-        if status:
-            result = [t for t in result if t.status == status]
-        if pet_name and pets:
-            # build a lookup of pet_id -> pet_name from the provided pets list
-            id_to_name = {p.pet_id: p.name.lower() for p in pets}
-            result = [t for t in result if id_to_name.get(t.assigned_pet_id) == pet_name.lower()]
-        return result
+        """Filter tasks by completion status and/or pet name in a single pass."""
+        id_to_name = {p.pet_id: p.name.lower() for p in pets} if (pet_name and pets) else {}
+        return [
+            t for t in tasks
+            if (not status or t.status == status)
+            and (not pet_name or id_to_name.get(t.assigned_pet_id) == pet_name.lower())
+        ]
 
 
 # --- Quick terminal test ---
