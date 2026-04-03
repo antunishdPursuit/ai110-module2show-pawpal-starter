@@ -89,13 +89,18 @@ view_daily_plan() implemented	Returns a dict of {pet_name: [due_tasks]} — stru
 **a. Constraints and priorities**
 
 - What constraints does your scheduler consider (for example: time, priority, preferences)?
+it shows the time, frequency, and we can decided which pet is it for
 - How did you decide which constraints mattered most?
-
+I wanted something easy to implement so it can easier to update the UI
 **b. Tradeoffs**
 
 - Describe one tradeoff your scheduler makes.
+sort_by_time — dropped strftime("%H:%M"), now uses native time object comparison via tuple sort
+detect_conflicts — renamed t → slot to remove the shadow on the time import; flattened the inner loop into a list comprehension
+filter_tasks — single-pass comprehension, dict only built when pet_name is actually provided
+complete_and_reschedule — removed the print() so no terminal noise bleeds through when called from the UI
 - Why is that tradeoff reasonable for this scenario?
-
+so it can make more sense in the UI. It has to be easier for users to use 
 ---
 
 ## 3. AI Collaboration
