@@ -27,11 +27,12 @@ class Schedule:
         self.next_due_date: date = self.start_date
 
     def calculate_next_due_date(self) -> date:
+        """Advance next_due_date by interval days and return the new date."""
         self.next_due_date = self.next_due_date + timedelta(days=self.interval)
         return self.next_due_date
 
     def is_due_today(self) -> bool:
-        # <= intentionally catches overdue/missed tasks
+        """Return True if the task is due today or is overdue."""
         return self.next_due_date <= date.today()
 
 
@@ -60,6 +61,7 @@ class Task:
     last_completed_date: Optional[date] = None
 
     def mark_complete(self):
+        """Mark the task complete for today and advance its schedule."""
         today = date.today()
         if self.last_completed_date == today:
             print(f"Task '{self.title}' already marked complete today — skipping.")
@@ -69,6 +71,7 @@ class Task:
             self.schedule.calculate_next_due_date()
 
     def update_task(self, title: str = None, description: str = None, schedule: Schedule = None):
+        """Update one or more task fields; raises ValueError if title is empty."""
         if title is not None:
             if title.strip() == "":
                 raise ValueError("title cannot be empty")
@@ -79,6 +82,7 @@ class Task:
             self.schedule = schedule
 
     def to_display_dict(self) -> dict:
+        """Return a plain dict of task fields formatted for terminal display."""
         return {
             "task_id": self.task_id,
             "title": self.title,
@@ -98,6 +102,7 @@ class Pet:
     tasks: list[Task] = field(default_factory=list)
 
     def add_task(self, task: Task):
+        """Add a task to this pet; raises ValueError on mismatched pet or duplicate task."""
         if task.assigned_pet_id != self.pet_id:
             raise ValueError(f"Task is assigned to pet_id {task.assigned_pet_id}, not {self.pet_id}")
         if any(t.task_id == task.task_id for t in self.tasks):
@@ -105,15 +110,18 @@ class Pet:
         self.tasks.append(task)
 
     def remove_task(self, task_id: int):
+        """Remove a task by ID; raises ValueError if not found."""
         original_len = len(self.tasks)
         self.tasks = [t for t in self.tasks if t.task_id != task_id]
         if len(self.tasks) == original_len:
             raise ValueError(f"Task {task_id} not found")
 
     def get_tasks(self) -> list[Task]:
+        """Return a shallow copy of all tasks for this pet."""
         return list(self.tasks)     # shallow copy to prevent external mutation
 
     def get_due_tasks_today(self) -> list[Task]:
+        """Return all tasks with a schedule that is due today or overdue."""
         return [t for t in self.tasks if t.schedule and t.schedule.is_due_today()]
 
 
@@ -124,11 +132,13 @@ class Owner:
         self.pets: list[Pet] = []
 
     def add_pet(self, pet: Pet):
+        """Register a pet to this owner; raises ValueError on duplicate pet_id."""
         if any(p.pet_id == pet.pet_id for p in self.pets):
             raise ValueError(f"Pet {pet.pet_id} already registered")
         self.pets.append(pet)
 
     def remove_pet(self, pet_id: int):
+        """Remove a pet by ID; raises ValueError if not found."""
         original_len = len(self.pets)
         self.pets = [p for p in self.pets if p.pet_id != pet_id]
         if len(self.pets) == original_len:
@@ -146,6 +156,7 @@ class Owner:
         return pet
 
     def view_daily_plan(self):
+        """Print a formatted daily schedule for all pets owned by this owner."""
         print(f"\n=== Daily Plan for {self.name} ===")
         if not self.pets:
             print("No pets registered.")
