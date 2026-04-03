@@ -49,11 +49,64 @@ pip install -r requirements.txt
 python -m pytest
 ```
 
-| Test | What it checks |
-|---|---|
-| `test_mark_complete_sets_last_completed_date` | `mark_complete()` sets `last_completed_date` to today |
-| `test_add_task_increases_pet_task_count` | Adding a task to a pet increases its task count by 1 |
-| `test_sort_by_time_returns_chronological_order` | Tasks sort earliest-first; tasks with no time sort last |
-| `test_complete_and_reschedule_creates_next_day_task` | Completing a daily task marks it done and adds a new task due tomorrow |
-| `test_detect_conflicts_flags_same_time_tasks` | Two tasks at the same time produce a `CONFLICT` warning with the correct time |
-| `test_detect_conflicts_no_warnings_for_different_times` | Tasks at different times produce no warnings |
+Sorting:
+Passes tasks in wrong order (noon, no-time, morning) to prove the sort is actually doing work, not just returning input order.
+Checks all three positions so a partial sort can't accidentally pass.
+
+Recurrence:
+test_complete_and_reschedule_creates_next_day_task
+Verifies three things at once: the original task is marked done, the pet now has 2 tasks, and the new task's next_due_date is exactly tomorrow.
+
+Conflict Detection:
+The positive case (test_detect_conflicts_flags_same_time_tasks) checks that a warning exists and that the string contains "08:00 AM" — so it's not just checking for any warning, but the right one.
+The negative case (test_detect_conflicts_no_warnings_for_different_times) ensures the function doesn't fire false positives.
+
+### "Confidence Level" 
+3/5 Stars
+
+---
+
+## Features
+
+### Owner & Pet Management
+
+- Create a named owner and register multiple pets (name, species, age)
+- Pets are stored in session state so they persist across Streamlit reruns
+
+### Task Scheduling
+
+- Add care tasks (walks, feeding, meds, grooming, etc.) to any registered pet
+- Choose a **schedule type**: Daily (every day), Weekly (every 7 days), or Custom (any interval in days)
+- Optionally set a **time of day** for each task so the daily view can order them chronologically
+
+### Sorting by Time (`Scheduler.sort_by_time`)
+
+- Tasks are sorted ascending by `time_of_day` before display
+- Tasks with no time set sort to the bottom ("Anytime") so timed tasks always appear first
+
+### Conflict Detection (`Scheduler.detect_conflicts`)
+
+- Scans all tasks due today for overlapping `time_of_day` values
+- Any two tasks sharing the exact same time slot trigger a named warning: which tasks conflict and at what time
+- Conflicts are surfaced as a prominent error banner in the UI with a drill-down expander listing each conflict
+
+### Status Filtering (`Scheduler.filter_tasks`)
+
+- Filter today's tasks by status (`pending`, `done`, `overdue`) and/or by pet name in a single pass
+- Combines both filters together so results match both criteria simultaneously
+
+### Daily Recurrence (`Scheduler.complete_and_reschedule`)
+
+- Marking a task done calls `mark_complete()`, which records today's date and advances `schedule.next_due_date` by the task's interval
+- For Daily and Weekly tasks, a new `Task` instance is automatically created for the next occurrence and added to the pet
+- Custom-interval tasks are advanced but do not auto-create a new instance
+
+### Status Derivation (`Task.status` property)
+
+- Status is computed at read time — no stored state to go stale
+- `done` if `last_completed_date` is today; `overdue` if `next_due_date` is in the past; `pending` otherwise
+
+### UI Summary Metrics
+
+- Displays a live count of **Pending / Overdue / Done** tasks at the top of the daily schedule
+- Overdue count is highlighted in red using Streamlit's `delta_color="inverse"` to prompt action
