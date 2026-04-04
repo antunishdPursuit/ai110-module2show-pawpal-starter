@@ -108,13 +108,15 @@ so it can make more sense in the UI. It has to be easier for users to use
 **a. How you used AI**
 
 - How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
+The way i used AI was to let it guide me to solutions and think about how they work in the context of this project. I wanted to know why it thought certain choices were better than others and how I would explain it to people I just met. 
 - What kinds of prompts or questions were most helpful?
-
+The mermaid diagram was the most helpful becuase it made me think how each compenont of my app works. I also wanted to see what data I needed to store and what data needed to added. It gave a great visual of what was needed and not needed.
 **b. Judgment and verification**
 
 - Describe one moment where you did not accept an AI suggestion as-is.
+One suggesstion I didn't agree was with the implemntation of the classes. It wanted to connect the owner to the tasks but I made sure to change it so that owner had many pets and that 1 pet can have many tasks
 - How did you evaluate or verify what the AI suggested?
-
+I just tested what was given to me. I found it was better to see if it worked then just revert back to a previous implemtation of the code in case anything broke. I also read the code to see if it was easily fixable or not
 ---
 
 ## 4. Testing and Verification
@@ -122,13 +124,15 @@ so it can make more sense in the UI. It has to be easier for users to use
 **a. What you tested**
 
 - What behaviors did you test?
+I thought each test would fail and I would have to work on it for a longer time than expected but it was easily done. I was able to get the tests done after a few implemnations of prompts and code changes
 - Why were these tests important?
-
+Any codebase should have tests in place to check if something is working without having to turn on the server. Also, its a great way to check if something is working or not
 **b. Confidence**
 
 - How confident are you that your scheduler works correctly?
+I'm pretty confident it works as intended but I made a few more changes so that the UI can work more intuitively. 
 - What edge cases would you test next if you had more time?
-
+I would test for multuple pets with multiple tasks, two pets having the same task, and duplicate owners and pets. 
 ---
 
 ## 5. Reflection
@@ -136,11 +140,12 @@ so it can make more sense in the UI. It has to be easier for users to use
 **a. What went well**
 
 - What part of this project are you most satisfied with?
-
+I'm most satisifed seeing how AI was able to help with creating, debugging, and understanding the code. It was a seamless experience and I hope to contunie using AI for the forseeable future. I alos like that the UI was improved after a few suggestions. Of course I want to do more but I like the way it looks now compared to the beginning.
 **b. What you would improve**
 
 - If you had another iteration, what would you improve or redesign?
-
+I want to make the UI look even better. I was looking up more desgins online but I wanted something less complicated for a simple app. I want to get better at prompting and context so that the next project can look amazing. 
 **c. Key takeaway**
 
 - What is one important thing you learned about designing systems or working with AI on this project?
+AI is not going to do everything for me. I still need to prompt and nudge it to work more smoothly and I'm hoping to improve this skill for the next project. Also, AI can already do a lot of things I haven't thought of before so I'm interested in doing more and also exploring more the capabilities of AI. 

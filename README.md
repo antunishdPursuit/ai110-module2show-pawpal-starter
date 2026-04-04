@@ -110,3 +110,6 @@ The negative case (test_detect_conflicts_no_warnings_for_different_times) ensure
 
 - Displays a live count of **Pending / Overdue / Done** tasks at the top of the daily schedule
 - Overdue count is highlighted in red using Streamlit's `delta_color="inverse"` to prompt action
+
+### Demo
+<a href="pet_app.PNG" target="_blank"><img src='pet_app.PNG' title='PawPal App' width='' alt='PawPal App' class='center-block' /></a>
